@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Elora Wedding
 
-## Getting Started
+Website untuk bisnis wedding content creator. Dibuat dengan Next.js 14 dan Tailwind CSS.
 
-First, run the development server:
+## Cara Install & Jalankan
 
+**Yang paling gampang:** Double click file `RUN.bat` - selesai!
+
+**Manual:**
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Fitur
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Landing page & halaman paket layanan
+- Form booking dengan validasi
+- Kalender availability 
+- Upload bukti pembayaran
+- Portfolio & galeri
+- Halaman kontak dengan WhatsApp integration
+- Admin dashboard untuk manage pesanan
 
-## Learn More
+## Setup Google Sheets (Opsional)
 
-To learn more about Next.js, take a look at the following resources:
+Kalau mau data booking tersimpan di Google Sheets:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Buat spreadsheet baru di Google Sheets
+2. Sheet pertama kasih nama "Bookings"
+3. Row pertama isi header ini:
+   ```
+   ID | Full Name | Email | WhatsApp | Wedding Date | Package ID | Package Name | Notes | Status | Payment Status | Payment Proof | Drive Link | Created At
+   ```
+4. Extensions > Apps Script
+5. Copy paste kode dari file `google-apps-script.js`
+6. Deploy > New deployment > Web app
+7. Execute as: Me, Who has access: Anyone
+8. Copy URL deployment nya
+9. Buat file `.env.local` isi kayak gini:
+   ```
+   NEXT_PUBLIC_GOOGLE_SCRIPT_URL=paste_url_tadi_disini
+   ADMIN_PASSWORD=admin123
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Done! Sekarang setiap booking akan masuk ke spreadsheet.
 
-## Deploy on Vercel
+## Konfigurasi
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Ganti paket & harga:** Edit `lib/config.ts`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Ganti nomor WhatsApp:** Cari `WHATSAPP_NUMBER` di `lib/config.ts`
+
+**Admin password:** Set di `.env.local`
+
+**Warna tema:** Edit CSS variables di `app/globals.css`
+
+## Admin Dashboard
+
+Buka `/admin` lalu login pakai password (default: admin123)
+
+Di sini bisa:
+- Lihat semua booking
+- Update status pesanan
+- Verifikasi pembayaran
+- Kasih link Google Drive untuk hasil foto/video
+
+## Deploy
+
+**Vercel (recommended):**
+1. Push ke GitHub
+2. Import di vercel.com
+3. Tambah environment variables
+4. Deploy
+
+**Netlify:**
+1. `npm run build`
+2. Upload ke Netlify
+3. Set environment variables
+
+## Kontak
+
+- WhatsApp: 085691680974
+- Email: info@elorawedding.com
+- Instagram: @elorawedding
+- TikTok: @elorawedding
+
+## Tech Stack
+
+Next.js 14, TypeScript, Tailwind CSS, React Icons, date-fns
+
+---
+
+Need help? Chat aja via WhatsApp.
