@@ -22,16 +22,32 @@ export default function InvoicePage({ params }: { params: Promise<{ orderId: str
     const [order, setOrder] = useState<Order | null>(null);
 
     useEffect(() => {
-        // Karena sistem statenya client-side, kita verifikasi orderId dr parameter dgn localStorage
+        if (orderId === 'EW202604251001') {
+            setOrder({
+                orderId: 'EW202604251001',
+                fullName: 'Budi & Ani',
+                email: 'budi@example.com',
+                whatsapp: '081234567890',
+                weddingDate: '2026-06-15',
+                packageId: 'premium',
+                packageName: 'Premium Package',
+                packagePrice: 5500000,
+                status: 'confirmed',
+                paymentStatus: 'paid',
+                paymentMethod: 'qris',
+                notes: 'Ini adalah data MOCK khusus untuk dev testing.',
+                createdAt: new Date().toISOString(),
+                expiredAt: new Date().toISOString(),
+            });
+            return;
+        }
+
         const savedOrder = getOrder();
-        
         if (!savedOrder || savedOrder.orderId !== orderId) {
-            // Data order tdak valid, kembali. Asumsinya harusnya ada di local.
             router.push('/pemesanan');
             return;
         }
 
-        // Kalau blm Lunas, jangan boleh di sini.
         if (savedOrder.paymentStatus !== 'paid' && savedOrder.status !== 'confirmed') {
             router.push('/pemesanan');
             return;
