@@ -71,14 +71,17 @@ export const checkDateAvailability = async (date: string): Promise<{ available: 
             o.status !== 'cancelled'
         ).length;
 
-        if (!SCRIPT_URL) {
-            // Dev mode: only use local count
+        // Fetch from secure backend API wrapper
+        const [year, month, day] = date.split('-');
+        const response = await fetch(`/api/calendar/slots?year=${year}&month=${month}`);
+        
+        if (!response.ok) {
             return { available: activeLocalCount < 2, count: activeLocalCount };
         }
 
-        const response = await fetch(`${SCRIPT_URL}?action=checkDate&date=${date}`);
         const data = await response.json();
-        const remoteCount = data.count || 0;
+        const remoteCount = data.slots?.[date] || data.count || 0;
+        
         const totalCount = Math.max(remoteCount, activeLocalCount);
         return { available: totalCount < 2, count: totalCount };
     } catch (error) {

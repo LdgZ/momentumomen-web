@@ -28,12 +28,13 @@ export interface Order {
     packageName: string;
     packagePrice: number;
     notes?: string;
-    paymentMethod: 'transfer';
+    paymentMethod: 'transfer' | 'qris';
     paymentStatus: 'pending' | 'awaiting_confirmation' | 'verified' | 'paid' | 'expired';
     status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
     paidAt?: string;
     expiredAt: string;
     createdAt: string;
+    xenditId?: string; // Xendit QR code ID for status polling
 }
 
 export interface Booking {
@@ -44,6 +45,7 @@ export interface Booking {
     weddingDate: string;
     packageId: string;
     packageName: string;
+    packagePrice?: number;
     notes?: string;
     status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
     paymentStatus: 'pending' | 'verified' | 'paid';
@@ -59,6 +61,7 @@ export interface CalendarDate {
     isBooked: boolean;
     isAvailable: boolean;
     bookingId?: string;
+    slotCount?: number;
 }
 
 export interface PaymentProof {
@@ -74,4 +77,15 @@ export interface Testimonial {
     rating: number;
     weddingDate: string;
     image?: string;
+}
+
+export type XenditQRStatus = 'ACTIVE' | 'SUCCEEDED' | 'INACTIVE' | 'UNKNOWN' | 'ERROR';
+
+export interface CreatePaymentResponse {
+    success: boolean;
+    xenditId?: string;
+    qrString?: string;
+    amount?: number;
+    expiresAt?: string;
+    message?: string;
 }
