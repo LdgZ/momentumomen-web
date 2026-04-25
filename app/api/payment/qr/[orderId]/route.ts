@@ -15,12 +15,11 @@ export async function GET(
     try {
         const auth = Buffer.from(`${XENDIT_SECRET_KEY}:`).toString('base64');
         
-        // Pengecekan data QRIS berdasarkan external_id/reference_id
-        const response = await fetch(`https://api.xendit.co/qr_codes?external_id=${orderId}`, {
+        // Pengecekan data QRIS berdasarkan external_id/reference_id (menggunakan Xendit v1 API)
+        const response = await fetch(`https://api.xendit.co/qr_codes/${orderId}`, {
             method: 'GET',
             headers: {
                 Authorization: `Basic ${auth}`,
-                'api-version': '2022-07-31',
             },
         });
 
@@ -28,16 +27,18 @@ export async function GET(
             return NextResponse.json({ success: false, message: 'Gagal fetch QR Data' }, { status: response.status });
         }
 
-        const data = await response.json();
+        const qrData = await response.json();
         
-        // Response Xendit berupa array data (karena hasil query parameter)
-        if (data.data && data.data.length > 0) {
-             const qrData = data.data[0];
+        // Response Xendit v1 adalah objek langsung, bukan array
+        if (qrData && qrData.qr_string) {
+             const createdTime = new Date(qrData.created).getTime();
+             const expiresAt = new Date(createdTime + 30 * 60 * 1000).toISOString();
+             
              return NextResponse.json({
                  success: true,
                  qrString: qrData.qr_string,
                  xenditId: qrData.id,
-                 expiresAt: qrData.expires_at,
+                 expiresAt: qrData.expires_at || expiresAt, // Default 30 minutes from creation
                  amount: qrData.amount
              });
         }
