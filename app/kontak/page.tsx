@@ -189,7 +189,7 @@ export default function KontakPage() {
                                             }
 
                                             const whatsappMessage = `Halo momentumomen,\n\nNama: ${name}\nEmail: ${email}\nSubjek: ${subject}\n\nPesan:\n${message}`;
-                                            window.location.href = formatWhatsAppLink(whatsappMessage);
+                                            window.open(formatWhatsAppLink(whatsappMessage), '_blank');
                                         }}
                                         className="w-full bg-gradient-to-r from-rose-600 to-pink-600 text-white py-4 rounded-full text-lg font-bold hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
                                     >

@@ -12,6 +12,7 @@ const Header = () => {
         { name: 'Paket', href: '/paket' },
         { name: 'Portofolio', href: '/portofolio' },
         { name: 'Kontak', href: '/kontak' },
+        { name: 'Lacak Pesanan', href: '/login' },
     ];
 
     return (

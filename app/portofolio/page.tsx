@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FaTimes, FaPlay, FaChevronLeft, FaChevronRight, FaExpand, FaHeart } from 'react-icons/fa';
+import { FaTimes, FaPlay, FaChevronLeft, FaChevronRight, FaExpand, FaHeart, FaExclamationCircle } from 'react-icons/fa';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -201,21 +201,28 @@ export default function PortofolioPage() {
                                 className="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl"
                             />
                         ) : (
-                            <video
-                                key={currentItem.src}
-                                src={currentItem.src}
-                                controls
-                                autoPlay
-                                muted
-                                playsInline
-                                className="max-w-full max-h-[85vh] rounded-xl shadow-2xl"
-                                onError={(e) => {
-                                    const target = e.currentTarget;
-                                    target.style.display = 'none';
-                                    const msg = target.nextElementSibling as HTMLElement;
-                                    if (msg) msg.style.display = 'block';
-                                }}
-                            />
+                            <div className="relative w-full flex items-center justify-center">
+                                <video
+                                    key={currentItem.src}
+                                    src={currentItem.src}
+                                    controls
+                                    autoPlay
+                                    muted
+                                    playsInline
+                                    className="max-w-full max-h-[85vh] rounded-xl shadow-2xl"
+                                    onError={(e) => {
+                                        const target = e.currentTarget;
+                                        target.style.display = 'none';
+                                        const msg = target.nextElementSibling as HTMLElement;
+                                        if (msg) msg.style.display = 'block';
+                                    }}
+                                />
+                                <div className="hidden bg-zinc-900 p-10 rounded-2xl text-center border border-zinc-800">
+                                    <FaExclamationCircle className="text-4xl text-rose-500 mx-auto mb-4" />
+                                    <p className="text-white font-bold">Video tidak dapat diputar</p>
+                                    <p className="text-zinc-500 text-sm mt-2">Format file mungkin tidak didukung atau file sudah dipindahkan.</p>
+                                </div>
+                            </div>
                         )}
                     </div>
 

@@ -8,6 +8,8 @@ const Footer = () => {
         { name: 'Paket Layanan', href: '/paket' },
         { name: 'Portofolio', href: '/portofolio' },
         { name: 'Pemesanan', href: '/pemesanan' },
+        { name: 'Dashboard Pelanggan', href: '/dashboard' },
+        { name: 'Admin Area', href: '/admin' },
         { name: 'Kontak', href: '/kontak' },
     ];
 

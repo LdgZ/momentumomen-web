@@ -52,6 +52,8 @@ function doGet(e) {
                 return getBookings();
             case 'getBookedDates':
                 return getBookedDates();
+            case 'getSlots':
+                return getSlots(e.parameter.year, e.parameter.month);
             default:
                 return ContentService.createTextOutput(JSON.stringify({
                     success: false,
@@ -143,6 +145,42 @@ function getBookedDates() {
     return ContentService.createTextOutput(JSON.stringify({
         success: true,
         dates: dates
+    })).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Get slots count per day for a specific month
+function getSlots(year, month) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bookings');
+    const data = sheet.getDataRange().getValues();
+    const slots = {};
+
+    // Skip header row
+    data.slice(1).forEach(row => {
+        const orderStatus = row[9];
+        const paymentStatus = row[10];
+        
+        // Only count active bookings
+        if (orderStatus !== 'cancelled' && paymentStatus !== 'expired') {
+            const weddingDateValue = row[4];
+            if (weddingDateValue instanceof Date) {
+                const dateStr = Utilities.formatDate(weddingDateValue, "GMT+7", "yyyy-MM-dd");
+                const [y, m, d] = dateStr.split('-');
+                if (parseInt(y) == year && parseInt(m) == month) {
+                    slots[dateStr] = (slots[dateStr] || 0) + 1;
+                }
+            } else if (typeof weddingDateValue === 'string' && weddingDateValue.includes('-')) {
+                const dateStr = weddingDateValue.split('T')[0];
+                const [y, m, d] = dateStr.split('-');
+                if (parseInt(y) == year && parseInt(m) == month) {
+                    slots[dateStr] = (slots[dateStr] || 0) + 1;
+                }
+            }
+        }
+    });
+
+    return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        slots: slots
     })).setMimeType(ContentService.MimeType.JSON);
 }
 

@@ -29,7 +29,7 @@ export default function InvoicePage({ params }: { params: Promise<{ orderId: str
                 email: 'budi@example.com',
                 whatsapp: '081234567890',
                 weddingDate: '2026-06-15',
-                packageId: 'premium',
+                selectedPackage: 'premium',
                 packageName: 'Premium Package',
                 packagePrice: 5500000,
                 status: 'confirmed',

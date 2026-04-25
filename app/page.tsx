@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { FaCamera, FaVideo, FaClock, FaHeart, FaStar, FaCheckCircle } from 'react-icons/fa';
 import { PACKAGES, formatCurrency, formatWhatsAppLink } from '@/lib/config';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'momentumomen — Abadikan Momen Spesial Pernikahan Anda',
+    description: 'Layanan wedding content creator profesional di Bondowoso. Kami mengabadikan momen spesial Anda dengan foto & video cinematic berkualitas tinggi.',
+};
 
 export default function Home() {
   const services = [

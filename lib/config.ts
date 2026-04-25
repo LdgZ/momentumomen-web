@@ -76,7 +76,11 @@ export const EMAIL = 'momentumomen@gmail.com';
 
 export const formatWhatsAppLink = (message: string): string => {
     const encodedMessage = encodeURIComponent(message);
-    return `https://wa.me/62${WHATSAPP_NUMBER.substring(1)}?text=${encodedMessage}`;
+    let cleanNumber = WHATSAPP_NUMBER.replace(/\D/g, '');
+    if (cleanNumber.startsWith('0')) {
+        cleanNumber = '62' + cleanNumber.substring(1);
+    }
+    return `https://wa.me/${cleanNumber}?text=${encodedMessage}`;
 };
 
 export const formatCurrency = (amount: number): string => {

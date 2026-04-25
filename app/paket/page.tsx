@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { FaCheckCircle, FaClock, FaCamera, FaVideo, FaCloud } from 'react-icons/fa';
 import { PACKAGES, formatCurrency } from '@/lib/config';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Paket Layanan — momentumomen',
+    description: 'Pilih paket wedding content creator yang sesuai dengan kebutuhan Anda. Mulai dari paket basic hingga premium dengan drone coverage.',
+};
 
 export default function PaketPage() {
     return (
