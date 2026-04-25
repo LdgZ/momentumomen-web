@@ -4,9 +4,9 @@ const XENDIT_SECRET_KEY = process.env.XENDIT_SECRET_KEY || '';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { orderId: string } }
+    context: { params: Promise<{ orderId: string }> }
 ) {
-    const orderId = params.orderId;
+    const { orderId } = await context.params;
 
     if (!orderId) {
         return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatCurrency, formatWhatsAppLink } from '@/lib/config';
 import { getOrder } from '@/lib/orderStore';
@@ -15,15 +15,17 @@ import {
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
-export default function InvoicePage({ params }: { params: { orderId: string } }) {
+export default function InvoicePage({ params }: { params: Promise<{ orderId: string }> }) {
     const router = useRouter();
+    const unwrappedParams = use(params);
+    const orderId = unwrappedParams.orderId;
     const [order, setOrder] = useState<Order | null>(null);
 
     useEffect(() => {
         // Karena sistem statenya client-side, kita verifikasi orderId dr parameter dgn localStorage
         const savedOrder = getOrder();
         
-        if (!savedOrder || savedOrder.orderId !== params.orderId) {
+        if (!savedOrder || savedOrder.orderId !== orderId) {
             // Data order tdak valid, kembali. Asumsinya harusnya ada di local.
             router.push('/pemesanan');
             return;
@@ -36,7 +38,7 @@ export default function InvoicePage({ params }: { params: { orderId: string } })
         }
 
         setOrder(savedOrder);
-    }, [params.orderId, router]);
+    }, [orderId, router]);
 
     const handlePrintAndSave = () => {
         window.print();

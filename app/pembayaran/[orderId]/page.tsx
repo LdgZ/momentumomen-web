@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { formatCurrency } from '@/lib/config';
 import { FaQrcode, FaCheckCircle, FaExclamationCircle, FaArrowLeft } from 'react-icons/fa';
 import Link from 'next/link';
 
-export default function PembayaranPage({ params }: { params: { orderId: string } }) {
+export default function PembayaranPage({ params }: { params: Promise<{ orderId: string }> }) {
     const router = useRouter();
-    const orderId = params.orderId;
+    const unwrappedParams = use(params);
+    const orderId = unwrappedParams.orderId;
 
     const [loading, setLoading] = useState(true);
     const [qrData, setQrData] = useState<{ qrString: string; amount: number; expiresAt: string } | null>(null);
