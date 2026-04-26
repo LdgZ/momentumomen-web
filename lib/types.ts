@@ -48,7 +48,7 @@ export interface Booking {
     packagePrice?: number;
     notes?: string;
     status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-    paymentStatus: 'pending' | 'verified' | 'paid';
+    paymentStatus: 'pending' | 'awaiting_confirmation' | 'verified' | 'paid' | 'expired';
     paymentMethod?: string;
     paymentProof?: string;
     driveLink?: string;

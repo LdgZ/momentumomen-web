@@ -72,7 +72,7 @@ export const checkDateAvailability = async (date: string): Promise<{ available: 
         ).length;
 
         // Fetch from secure backend API wrapper
-        const [_year, _month, _day] = date.split('-');
+        const [year, month, _day] = date.split('-');
         const response = await fetch(`/api/calendar/slots?year=${year}&month=${month}`);
         
         if (!response.ok) {
