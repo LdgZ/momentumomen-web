@@ -38,8 +38,7 @@ export default function PembayaranPage({ params }: { params: Promise<{ orderId: 
                   } else {
                        setStatus('NOT_FOUND');
                   }
-             } catch (e) {
-                  console.error(e);
+             } catch {
                   setStatus('NOT_FOUND');
              } finally {
                   setLoading(false);
@@ -108,8 +107,8 @@ export default function PembayaranPage({ params }: { params: Promise<{ orderId: 
             } else {
                 alert('Simulasi gagal: ' + (data.err?.message || 'Gagal'));
             }
-        } catch (e) {
-            console.error(e);
+        } catch {
+            console.error('Simulasi Gagal');
         } finally {
             setIsSimulating(false);
         }

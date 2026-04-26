@@ -8,7 +8,7 @@ const SCRIPT_URL = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL || '';
 export interface GoogleSheetsResponse {
     success: boolean;
     message?: string;
-    data?: any;
+    data?: unknown;
 }
 
 // Submit a new booking to Google Sheets
@@ -27,7 +27,7 @@ export const submitBooking = async (
             };
         }
 
-        const response = await fetch(SCRIPT_URL, {
+        const _response = await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
             headers: {
@@ -65,14 +65,14 @@ export const checkDateAvailability = async (date: string): Promise<{ available: 
     try {
         // Check local orders in localStorage first
         const localOrders = JSON.parse(localStorage.getItem('all_orders') || '[]');
-        const activeLocalCount = localOrders.filter((o: any) =>
+        const activeLocalCount = localOrders.filter((o: Booking) =>
             o.weddingDate === date &&
             o.paymentStatus !== 'expired' &&
             o.status !== 'cancelled'
         ).length;
 
         // Fetch from secure backend API wrapper
-        const [year, month, day] = date.split('-');
+        const [_year, _month, _day] = date.split('-');
         const response = await fetch(`/api/calendar/slots?year=${year}&month=${month}`);
         
         if (!response.ok) {
@@ -84,11 +84,11 @@ export const checkDateAvailability = async (date: string): Promise<{ available: 
         
         const totalCount = Math.max(remoteCount, activeLocalCount);
         return { available: totalCount < 2, count: totalCount };
-    } catch (error) {
+    } catch (_error) {
         // fallback: check localStorage only
         try {
             const localOrders = JSON.parse(localStorage.getItem('all_orders') || '[]');
-            const count = localOrders.filter((o: any) =>
+            const count = localOrders.filter((o: Booking) =>
                 o.weddingDate === date &&
                 o.paymentStatus !== 'expired' &&
                 o.status !== 'cancelled'
@@ -161,7 +161,7 @@ export const updateBookingStatus = async (
             };
         }
 
-        const response = await fetch(SCRIPT_URL, {
+        const _response = await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
             headers: {
@@ -201,7 +201,7 @@ export const addDriveLink = async (
             };
         }
 
-        const response = await fetch(SCRIPT_URL, {
+        const _response = await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
             headers: {

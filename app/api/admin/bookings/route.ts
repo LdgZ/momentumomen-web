@@ -22,7 +22,7 @@ export async function GET() {
             success: true,
             bookings: data.bookings || [],
         });
-    } catch {
+    } catch (_error: unknown) {
         return NextResponse.json({ success: true, bookings: getMockBookings() });
     }
 }
@@ -32,7 +32,13 @@ export async function POST(request: NextRequest) {
     const scriptUrl = getScriptUrl();
 
     try {
-        const body = await request.json();
+        const body = await request.json() as { 
+            action: string; 
+            bookingId: string; 
+            status: string; 
+            paymentStatus: string; 
+            driveLink: string 
+        };
         const { action } = body;
 
         if (!scriptUrl) {
@@ -70,7 +76,7 @@ export async function POST(request: NextRequest) {
             { success: false, message: 'Unknown action' },
             { status: 400 }
         );
-    } catch {
+    } catch (_error: unknown) {
         return NextResponse.json(
             { success: false, message: 'Server error' },
             { status: 500 }
