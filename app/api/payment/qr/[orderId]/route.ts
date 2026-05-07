@@ -27,39 +27,39 @@ export async function GET(
         const auth = Buffer.from(`${XENDIT_SECRET_KEY}:`).toString('base64');
         let qrData = null;
 
-        // --- CARA 1: Coba v1 (Langsung pakai orderId sebagai ID) ---
-        // Cara ini paling cepat jika orderId adalah ID QR-nya.
+        // --- CARA 1: Coba v2 (Cari berdasarkan reference_id) ---
+        // Karena QR dibuat dengan v2 API, ini yang paling tepat untuk mendapatkan 'expires_at' asli
         try {
-            const resV1 = await fetch(`https://api.xendit.co/qr_codes/${orderId}`, {
+            const resV2 = await fetch(`https://api.xendit.co/qr_codes?reference_id=${orderId}`, {
                 method: 'GET',
-                headers: { Authorization: `Basic ${auth}` },
+                headers: {
+                    Authorization: `Basic ${auth}`,
+                    'api-version': '2022-07-31',
+                },
             });
-            if (resV1.ok) {
-                qrData = await resV1.json();
+            if (resV2.ok) {
+                const dataV2 = await resV2.json();
+                if (dataV2 && dataV2.data && dataV2.data.length > 0) {
+                    qrData = dataV2.data[0];
+                }
             }
         } catch (e) {
-            console.error('v1 fetch error:', e);
+            console.error('v2 fetch error:', e);
         }
 
-        // --- CARA 2: Coba v2 (Cari berdasarkan reference_id) ---
-        // Jika cara 1 gagal, kita cari di daftar QR v2.
+        // --- CARA 2: Coba v1 (Langsung pakai orderId sebagai ID) ---
+        // Fallback jika v2 tidak menemukan data (untuk backward compatibility)
         if (!qrData || !qrData.qr_string) {
             try {
-                const resV2 = await fetch(`https://api.xendit.co/qr_codes?reference_id=${orderId}`, {
+                const resV1 = await fetch(`https://api.xendit.co/qr_codes/${orderId}`, {
                     method: 'GET',
-                    headers: {
-                        Authorization: `Basic ${auth}`,
-                        'api-version': '2022-07-31',
-                    },
+                    headers: { Authorization: `Basic ${auth}` },
                 });
-                if (resV2.ok) {
-                    const dataV2 = await resV2.json();
-                    if (dataV2 && dataV2.data && dataV2.data.length > 0) {
-                        qrData = dataV2.data[0];
-                    }
+                if (resV1.ok) {
+                    qrData = await resV1.json();
                 }
             } catch (e) {
-                console.error('v2 fetch error:', e);
+                console.error('v1 fetch error:', e);
             }
         }
 
