@@ -54,8 +54,8 @@ export async function GET(
             const scriptUrl = process.env.GOOGLE_SCRIPT_URL || process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL;
             if (scriptUrl) {
                 try {
-                    // Update ke Google Sheets tanpa menunggu (fire and forget)
-                    fetch(scriptUrl, {
+                    // Update ke Google Sheets (HARUS ditunggu 'await' karena Vercel akan mematikan fungsi jika sudah return)
+                    await fetch(scriptUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -64,7 +64,8 @@ export async function GET(
                             status: 'confirmed',
                             paymentStatus: 'paid',
                         }),
-                    }).catch(err => console.error('Fallback sync fetch error:', err));
+                    });
+                    console.log('Fallback sync completed for order:', orderId);
                 } catch (e) {
                     console.error('Fallback sync error:', e);
                 }
