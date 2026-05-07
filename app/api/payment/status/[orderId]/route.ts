@@ -47,6 +47,29 @@ export async function GET(
         }
 
         const isPaid = paymentList.length > 0;
+
+        // Fallback Sync: Jika Xendit lunas tapi webhook sebelumnya gagal,
+        // kita paksa Google Sheets untuk update statusnya sekarang.
+        if (isPaid) {
+            const scriptUrl = process.env.GOOGLE_SCRIPT_URL || process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL;
+            if (scriptUrl) {
+                try {
+                    // Update ke Google Sheets tanpa menunggu (fire and forget)
+                    fetch(scriptUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'updateStatus',
+                            bookingId: orderId,
+                            status: 'confirmed',
+                            paymentStatus: 'paid',
+                        }),
+                    }).catch(err => console.error('Fallback sync fetch error:', err));
+                } catch (e) {
+                    console.error('Fallback sync error:', e);
+                }
+            }
+        }
         
         return NextResponse.json({
             success: true,

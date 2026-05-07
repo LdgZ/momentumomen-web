@@ -35,6 +35,7 @@ export default function PembayaranPage({ params }: { params: Promise<{ orderId: 
                        const statusData = await statusRes.json();
                        if (statusData.success && statusData.status === 'SUCCEEDED') {
                             setStatus('SUCCEEDED');
+                            setTimeout(() => router.push(`/invoice/${orderId}`), 1000);
                             return;
                        }
                   } else {
