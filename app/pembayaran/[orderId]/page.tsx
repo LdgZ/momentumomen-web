@@ -17,6 +17,7 @@ export default function PembayaranPage({ params }: { params: Promise<{ orderId: 
     const [status, setStatus] = useState<'ACTIVE' | 'SUCCEEDED' | 'EXPIRED' | 'NOT_FOUND'>('ACTIVE');
     const [timeLeft, setTimeLeft] = useState(0);
     const [isSimulating, setIsSimulating] = useState(false);
+    const [xenditId, setXenditId] = useState<string | null>(null);
 
     // Initial Load
     useEffect(() => {
@@ -27,6 +28,7 @@ export default function PembayaranPage({ params }: { params: Promise<{ orderId: 
                   
                   if (data.success) {
                        setQrData({ qrString: data.qrString, amount: data.amount, expiresAt: data.expiresAt });
+                       setXenditId(data.xenditId);
                        
                        // Lakukan pengecekan status awal juga
                        const statusRes = await fetch(`/api/payment/status/${orderId}`);
@@ -93,7 +95,10 @@ export default function PembayaranPage({ params }: { params: Promise<{ orderId: 
             const res = await fetch('/api/payment/simulate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ externalId: orderId })
+                body: JSON.stringify({ 
+                    externalId: orderId,
+                    qrCodeId: xenditId 
+                })
             });
             const data = await res.json();
             if (data.success || data.err?.error_code === 'EXTERNAL_ID_ALREADY_PAID') {

@@ -22,6 +22,7 @@ export default function InvoicePage({ params }: { params: Promise<{ orderId: str
     const [order, setOrder] = useState<Order | null>(null);
 
     useEffect(() => {
+        // 1. Cek Mock Data
         if (orderId === 'EW202604251001') {
             setOrder({
                 orderId: 'EW202604251001',
@@ -42,18 +43,48 @@ export default function InvoicePage({ params }: { params: Promise<{ orderId: str
             return;
         }
 
+        // 2. Cek dari Local Storage (Session saat ini)
         const savedOrder = getOrder();
-        if (!savedOrder || savedOrder.orderId !== orderId) {
-            router.push('/pemesanan');
+        if (savedOrder && savedOrder.orderId === orderId) {
+            setOrder(savedOrder);
             return;
         }
 
-        if (savedOrder.paymentStatus !== 'paid' && savedOrder.status !== 'confirmed') {
-            router.push('/pemesanan');
-            return;
-        }
+        // 3. Jika tidak ada di local (misal balik dari dashboard), ambil dari server
+        const fetchFromServer = async () => {
+            try {
+                const res = await fetch('/api/customer/bookings');
+                const data = await res.json();
+                
+                if (data.success && data.bookings) {
+                    const found = data.bookings.find((b: any) => b.id === orderId);
+                    if (found) {
+                        setOrder({
+                            orderId: found.id,
+                            fullName: found.fullName,
+                            email: found.email,
+                            whatsapp: found.whatsapp,
+                            weddingDate: found.weddingDate,
+                            selectedPackage: found.packageId,
+                            packageName: found.packageName,
+                            packagePrice: found.packagePrice,
+                            status: found.status,
+                            paymentStatus: found.paymentStatus,
+                            paymentMethod: found.paymentMethod,
+                            notes: found.notes,
+                            createdAt: found.createdAt,
+                            expiredAt: found.createdAt // Fallback
+                        });
+                        return;
+                    }
+                }
+                router.push('/pemesanan');
+            } catch {
+                router.push('/pemesanan');
+            }
+        };
 
-        setOrder(savedOrder);
+        fetchFromServer();
     }, [orderId, router]);
 
     const handlePrintAndSave = () => {

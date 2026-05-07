@@ -4,7 +4,7 @@ const XENDIT_SECRET_KEY = process.env.XENDIT_SECRET_KEY || '';
 
 export async function POST(request: NextRequest) {
     try {
-        const { externalId } = await request.json();
+        const { externalId, qrCodeId } = await request.json();
 
         if (!externalId) {
             return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
@@ -17,8 +17,10 @@ export async function POST(request: NextRequest) {
         const auth = Buffer.from(`${XENDIT_SECRET_KEY}:`).toString('base64');
         
         // Memanggil API Simulasi Xendit
-        // Endpoint: POST https://api.xendit.co/qr_codes/{external_id}/payments/simulate
-        const response = await fetch(`https://api.xendit.co/qr_codes/${externalId}/payments/simulate`, {
+        // Endpoint: POST https://api.xendit.co/qr_codes/{id}/payments/simulate
+        // Gunakan qrCodeId jika ada (v2), jika tidak fallback ke externalId (v1/legacy)
+        const targetId = qrCodeId || externalId;
+        const response = await fetch(`https://api.xendit.co/qr_codes/${targetId}/payments/simulate`, {
             method: 'POST',
             headers: {
                 Authorization: `Basic ${auth}`,
