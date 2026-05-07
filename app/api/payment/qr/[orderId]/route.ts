@@ -35,21 +35,29 @@ export async function GET(
             },
         });
 
-        if (!response.ok) {
-            return NextResponse.json({ success: false, message: 'Gagal fetch QR Data' }, { status: response.status });
-        }
+        let data = await response.json();
+        let qrData = data && data.data && data.data.length > 0 ? data.data[0] : null;
 
-        const data = await response.json();
-        
-        // Response Xendit v2 adalah { data: [...] }
-        const qrData = data && data.data && data.data.length > 0 ? data.data[0] : null;
+        // --- FALLBACK KE V1 (Jika v2 tidak menemukan data) ---
+        if (!qrData) {
+            const fallbackResponse = await fetch(`https://api.xendit.co/qr_codes/${orderId}`, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Basic ${auth}`,
+                },
+            });
+            
+            if (fallbackResponse.ok) {
+                qrData = await fallbackResponse.json();
+            }
+        }
 
         if (qrData && qrData.qr_string) {
              return NextResponse.json({
                  success: true,
                  qrString: qrData.qr_string,
                  xenditId: qrData.id,
-                 expiresAt: qrData.expires_at,
+                 expiresAt: qrData.expires_at || new Date(new Date(qrData.created).getTime() + 30 * 60 * 1000).toISOString(),
                  amount: qrData.amount
              });
         }

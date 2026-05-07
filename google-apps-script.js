@@ -228,6 +228,31 @@ function addDriveLink(bookingId, driveLink) {
     })).setMimeType(ContentService.MimeType.JSON);
 }
 
+// Fungsi Otomatis: Menghapus pesanan yang sudah melewati batas waktu bayar (1 jam)
+// dan statusnya masih 'pending' agar database tetap ringan.
+function cleanupExpiredBookings() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bookings');
+  if (!sheet) return;
+  
+  const data = sheet.getDataRange().getValues();
+  const now = new Date();
+  const ONE_HOUR = 60 * 60 * 1000; // 1 jam dalam milidetik
+  
+  // Mulai dari bawah ke atas agar index baris tidak berantakan saat dihapus
+  for (let i = data.length - 1; i >= 1; i--) {
+    const paymentStatus = data[i][10]; // Kolom K (Payment Status)
+    const createdAtStr = data[i][15];   // Kolom P (Created At)
+    
+    if (paymentStatus === 'pending' && createdAtStr) {
+      const createdAt = new Date(createdAtStr);
+      // Jika sudah lebih dari 1 jam dan belum dibayar, hapus.
+      if (now.getTime() - createdAt.getTime() > ONE_HOUR) {
+        sheet.deleteRow(i + 1);
+      }
+    }
+  }
+}
+
 // Helper: Get package name from ID
 function getPackageName(packageId) {
     const packages = {
