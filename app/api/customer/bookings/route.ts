@@ -30,7 +30,15 @@ export async function GET(request: NextRequest) {
         });
 
         if (!response.ok) {
-            return NextResponse.json({ success: false, message: 'Database unreachable' }, { status: 502 });
+            return NextResponse.json({ success: false, message: `Database error: ${response.status}` }, { status: 502 });
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            return NextResponse.json({ 
+                success: false, 
+                message: 'Database memberikan respon yang salah. Pastikan akses Google Script diatur ke "Anyone".' 
+            }, { status: 500 });
         }
 
         const data = await response.json();
@@ -57,8 +65,9 @@ export async function GET(request: NextRequest) {
         }
         
         return NextResponse.json({ success: true, bookings: [] });
-    } catch {
-        return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    } catch (err: any) {
+        console.error('Fetch bookings error:', err);
+        return NextResponse.json({ success: false, message: err.message || 'Gagal mengambil data pesanan' }, { status: 500 });
     }
 }
 

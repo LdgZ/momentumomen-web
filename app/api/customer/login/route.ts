@@ -38,14 +38,18 @@ export async function POST(request: NextRequest) {
                 });
 
                 if (!response.ok) {
-                    throw new Error('Gagal menghubungi database Google Sheets');
+                    throw new Error(`Database error: ${response.status}`);
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Database memberikan respon yang salah (bukan JSON). Pastikan Google Script di-set ke "Anyone".');
                 }
 
                 const data = await response.json();
                 
                 if (data.success && Array.isArray(data.bookings)) {
                     const userBookings = data.bookings.filter((b: any) => {
-                        // Pastikan dbWa adalah string sebelum replace
                         let dbWa = String(b.whatsapp || '').replace(/\D/g, '');
                         if (dbWa.startsWith('0')) dbWa = '62' + dbWa.slice(1);
                         else if (dbWa.startsWith('8')) dbWa = '62' + dbWa;
@@ -54,13 +58,12 @@ export async function POST(request: NextRequest) {
                     });
                     foundBookings = userBookings.length;
                 }
-            } catch (fetchError) {
+            } catch (fetchError: any) {
                 console.error('Fetch Error:', fetchError);
-                // Kita lanjutkan agar bisa dicek foundBookings, 
-                // tapi jika ini gagal dan bukan dev mode, kita lempar error
-                if (process.env.NODE_ENV === 'production') {
-                    throw fetchError;
-                }
+                return NextResponse.json(
+                    { success: false, message: fetchError.message || 'Gagal menghubungi database' },
+                    { status: 500 }
+                );
             }
         } else {
              // Fallback Dev Mode
