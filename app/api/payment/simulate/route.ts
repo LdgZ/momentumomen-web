@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
             headers: {
                 Authorization: `Basic ${auth}`,
                 'Content-Type': 'application/json',
+                'api-version': '2022-07-31',
             },
         });
 
