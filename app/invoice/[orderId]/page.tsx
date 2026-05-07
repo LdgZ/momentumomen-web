@@ -219,14 +219,16 @@ export default function InvoicePage({ params }: { params: Promise<{ orderId: str
                         <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t-2 border-gray-900 gap-8">
                             
                             {/* Paid Stamp */}
-                            <div className="flex items-center justify-center transform -rotate-12 border-4 border-emerald-500 text-emerald-500 rounded-lg p-3 sm:order-first order-last text-center max-w-[200px]">
-                                <div>
-                                    <h4 className="text-2xl font-black uppercase tracking-widest leading-none">LUNAS</h4>
-                                    <p className="text-[10px] font-bold tracking-widest mt-1 border-t-2 border-emerald-500 pt-1">
-                                        MOMENTUMOMEN
-                                    </p>
+                            {order.paymentStatus === 'paid' && (
+                                <div className="flex items-center justify-center transform -rotate-12 border-4 border-emerald-500 text-emerald-500 rounded-lg p-3 sm:order-first order-last text-center max-w-[200px]">
+                                    <div>
+                                        <h4 className="text-2xl font-black uppercase tracking-widest leading-none">LUNAS</h4>
+                                        <p className="text-[10px] font-bold tracking-widest mt-1 border-t-2 border-emerald-500 pt-1">
+                                            MOMENTUMOMEN
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div className="text-center sm:text-right w-full sm:w-auto">
                                 <p className="text-sm text-gray-500 mb-1 uppercase tracking-wider font-bold">Total Pembayaran</p>

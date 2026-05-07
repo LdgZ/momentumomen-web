@@ -28,11 +28,13 @@ function initDatabase() {
   Logger.log('Database berhasil di-reset dan di-inisialisasi.');
 }
 
-// Helper: Mencari index kolom berdasarkan nama
+// Helper: Mencari index kolom berdasarkan nama (Case-insensitive & Trim)
 function getHeaderMap(sheet) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const map = {};
-  headers.forEach((h, i) => map[h] = i);
+  headers.forEach((h, i) => {
+    if (h) map[String(h).toUpperCase().trim()] = i;
+  });
   return map;
 }
 
@@ -66,17 +68,17 @@ function createBooking(booking) {
   const row = new Array(HEADERS.length).fill('');
 
   row[map['ID']] = booking.orderId;
-  row[map['Full Name']] = booking.fullName;
-  row[map['Email']] = booking.email;
-  row[map['WhatsApp']] = String(booking.whatsapp); // Pastikan string
-  row[map['Wedding Date']] = booking.weddingDate;
-  row[map['Package ID']] = booking.selectedPackage;
-  row[map['Package Name']] = booking.packageName;
-  row[map['Package Price']] = booking.packagePrice;
-  row[map['Notes']] = booking.notes || '';
-  row[map['Status']] = 'pending';
-  row[map['Payment Status']] = 'pending';
-  row[map['Created At']] = new Date().toISOString();
+  row[map['FULL NAME']] = booking.fullName;
+  row[map['EMAIL']] = booking.email;
+  row[map['WHATSAPP']] = String(booking.whatsapp); // Pastikan string
+  row[map['WEDDING DATE']] = booking.weddingDate;
+  row[map['PACKAGE ID']] = booking.selectedPackage;
+  row[map['PACKAGE NAME']] = booking.packageName;
+  row[map['PACKAGE PRICE']] = booking.packagePrice;
+  row[map['NOTES']] = booking.notes || '';
+  row[map['STATUS']] = 'pending';
+  row[map['PAYMENT STATUS']] = 'pending';
+  row[map['CREATED AT']] = new Date().toISOString();
 
   sheet.appendRow(row);
   return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
@@ -92,21 +94,21 @@ function getBookings() {
     const row = data[i];
     bookings.push({
       id: row[map['ID']],
-      fullName: row[map['Full Name']],
-      email: row[map['Email']],
-      whatsapp: String(row[map['WhatsApp']]),
-      weddingDate: row[map['Wedding Date']],
-      packageId: row[map['Package ID']],
-      packageName: row[map['Package Name']],
-      packagePrice: row[map['Package Price']],
-      notes: row[map['Notes']],
-      status: row[map['Status']],
-      paymentStatus: row[map['Payment Status']],
-      paymentMethod: row[map['Payment Method']],
-      paymentProof: row[map['Payment Proof']],
-      driveLink: row[map['Drive Link']],
-      paidAt: row[map['Paid At']],
-      createdAt: row[map['Created At']]
+      fullName: row[map['FULL NAME']],
+      email: row[map['EMAIL']],
+      whatsapp: String(row[map['WHATSAPP']]),
+      weddingDate: row[map['WEDDING DATE']],
+      packageId: row[map['PACKAGE ID']],
+      packageName: row[map['PACKAGE NAME']],
+      packagePrice: row[map['PACKAGE PRICE']],
+      notes: row[map['NOTES']],
+      status: row[map['STATUS']],
+      paymentStatus: row[map['PAYMENT STATUS']],
+      paymentMethod: row[map['PAYMENT METHOD']],
+      paymentProof: row[map['PAYMENT PROOF']],
+      driveLink: row[map['DRIVE LINK']],
+      paidAt: row[map['PAID AT']],
+      createdAt: row[map['CREATED AT']]
     });
   }
 
@@ -120,12 +122,13 @@ function updateStatus(bookingId, status, paymentStatus) {
   const map = getHeaderMap(sheet);
 
   for (let i = 1; i < data.length; i++) {
-    if (data[i][map['ID']] === bookingId) {
-      if (status) sheet.getRange(i + 1, map['Status'] + 1).setValue(status);
+    const rowId = String(data[i][map['ID']]).trim();
+    if (rowId === String(bookingId).trim()) {
+      if (status) sheet.getRange(i + 1, map['STATUS'] + 1).setValue(status);
       if (paymentStatus) {
-        sheet.getRange(i + 1, map['Payment Status'] + 1).setValue(paymentStatus);
-        if (paymentStatus === 'paid') {
-          sheet.getRange(i + 1, map['Paid At'] + 1).setValue(new Date().toISOString());
+        sheet.getRange(i + 1, map['PAYMENT STATUS'] + 1).setValue(paymentStatus);
+        if (paymentStatus === 'paid' || paymentStatus === 'Lunas') {
+          sheet.getRange(i + 1, map['PAID AT'] + 1).setValue(new Date().toISOString());
         }
       }
       break;
@@ -140,8 +143,9 @@ function addDriveLink(bookingId, driveLink) {
   const map = getHeaderMap(sheet);
 
   for (let i = 1; i < data.length; i++) {
-    if (data[i][map['ID']] === bookingId) {
-      sheet.getRange(i + 1, map['Drive Link'] + 1).setValue(driveLink);
+    const rowId = String(data[i][map['ID']]).trim();
+    if (rowId === String(bookingId).trim()) {
+      sheet.getRange(i + 1, map['DRIVE LINK'] + 1).setValue(driveLink);
       break;
     }
   }
@@ -157,8 +161,8 @@ function cleanupExpiredBookings() {
   const LIMIT = 2 * 60 * 60 * 1000; // 2 Jam
 
   for (let i = data.length - 1; i >= 1; i--) {
-    const pStatus = String(data[i][map['Payment Status']]).toLowerCase();
-    const createdAtStr = data[i][map['Created At']];
+    const pStatus = String(data[i][map['PAYMENT STATUS']]).toLowerCase();
+    const createdAtStr = data[i][map['CREATED AT']];
     
     if (pStatus === 'pending' && createdAtStr) {
       const createdAt = new Date(createdAtStr);
