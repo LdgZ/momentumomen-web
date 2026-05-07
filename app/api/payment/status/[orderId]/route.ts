@@ -38,13 +38,20 @@ export async function GET(
 
         const data = await response.json();
         
-        // Data dari Xendit berbentuk { data: [...] }. Jika array berikur, berati ada pembayaran.
-        const isPaid = data && data.data && data.data.length > 0;
+        // Xendit V1 mengembalikan Array langsung, V2 mengembalikan { data: [...] }
+        let paymentList = [];
+        if (Array.isArray(data)) {
+            paymentList = data;
+        } else if (data && Array.isArray(data.data)) {
+            paymentList = data.data;
+        }
+
+        const isPaid = paymentList.length > 0;
         
         return NextResponse.json({
             success: true,
             status: isPaid ? 'SUCCEEDED' : 'ACTIVE', // Sesuaikan status dengan respon
-            payments: data.data
+            payments: paymentList
         });
     } catch (error) {
         console.error('API Error:', error);

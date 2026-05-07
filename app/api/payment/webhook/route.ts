@@ -17,10 +17,26 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         console.log('Xendit webhook received:', JSON.stringify(body, null, 2));
 
-        const { reference_id, status, id } = body;
+        // Handle both V1 and V2 webhook payload structures
+        let reference_id = body.reference_id;
+        let paymentStatus = body.status;
+        let paymentId = body.id;
 
-        // Xendit QRIS status: SUCCEEDED = bayar berhasil
-        if (status === 'SUCCEEDED' && reference_id) {
+        // V2 Webhook format (nested inside "data")
+        if (body.event === 'qr.payment' && body.data) {
+            reference_id = body.data.reference_id;
+            paymentStatus = body.data.status;
+            paymentId = body.data.id;
+        } 
+        // V1 Webhook format
+        else if (body.qr_code) {
+            reference_id = body.qr_code.external_id;
+            paymentStatus = body.status;
+            paymentId = body.id;
+        }
+
+        // Xendit QRIS status: SUCCEEDED (v2) atau COMPLETED (v1) = bayar berhasil
+        if ((paymentStatus === 'SUCCEEDED' || paymentStatus === 'COMPLETED') && reference_id) {
             const scriptUrl = SCRIPT_URL();
 
             if (scriptUrl) {
@@ -37,7 +53,7 @@ export async function POST(request: NextRequest) {
                 });
             }
 
-            console.log(`Payment SUCCEEDED for order: ${reference_id}, xenditId: ${id}`);
+            console.log(`Payment SUCCEEDED for order: ${reference_id}, xenditId: ${paymentId}`);
         }
 
         // Selalu return 200 agar Xendit tidak retry
