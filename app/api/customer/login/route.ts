@@ -41,9 +41,10 @@ export async function POST(request: NextRequest) {
                     throw new Error(`Database error: ${response.status}`);
                 }
 
-                const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('Database memberikan respon yang salah (bukan JSON). Pastikan Google Script di-set ke "Anyone".');
+                    const text = await response.text();
+                    console.error('Non-JSON Response from Google:', text.slice(0, 200));
+                    throw new Error(`Database memberikan respon yang salah (Tipe: ${contentType}). Pastikan Google Script di-set ke "Anyone".`);
                 }
 
                 const data = await response.json();
