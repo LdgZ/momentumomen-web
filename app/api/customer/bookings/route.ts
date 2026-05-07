@@ -28,12 +28,17 @@ export async function GET(request: NextRequest) {
         const response = await fetch(`${scriptUrl}?action=getBookings`, {
             cache: 'no-store',
         });
+
+        if (!response.ok) {
+            return NextResponse.json({ success: false, message: 'Database unreachable' }, { status: 502 });
+        }
+
         const data = await response.json();
         
-        if (data.success && data.bookings) {
+        if (data.success && Array.isArray(data.bookings)) {
             // Filter hanya booking milik WA si customer
             const userBookings = data.bookings.filter((b: any) => {
-                let dbWa = b.whatsapp.replace(/\D/g, '');
+                let dbWa = String(b.whatsapp || '').replace(/\D/g, '');
                 if (dbWa.startsWith('0')) dbWa = '62' + dbWa.slice(1);
                 else if (dbWa.startsWith('8')) dbWa = '62' + dbWa;
                 

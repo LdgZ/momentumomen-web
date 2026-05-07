@@ -31,21 +31,36 @@ export async function POST(request: NextRequest) {
         let foundBookings = 0;
 
         if (scriptUrl) {
-            // Lakukan cek via Google Sheets apakah ada order dgn WA ini
-            const response = await fetch(`${scriptUrl}?action=getBookings`, {
-                cache: 'no-store',
-            });
-            const data = await response.json();
-            
-            if (data.success && data.bookings) {
-                const userBookings = data.bookings.filter((b: any) => {
-                    let dbWa = (b.whatsapp || '').replace(/\D/g, '');
-                    if (dbWa.startsWith('0')) dbWa = '62' + dbWa.slice(1);
-                    else if (dbWa.startsWith('8')) dbWa = '62' + dbWa;
-                    
-                    return dbWa === normalizedWa;
+            try {
+                // Lakukan cek via Google Sheets apakah ada order dgn WA ini
+                const response = await fetch(`${scriptUrl}?action=getBookings`, {
+                    cache: 'no-store',
                 });
-                foundBookings = userBookings.length;
+
+                if (!response.ok) {
+                    throw new Error('Gagal menghubungi database Google Sheets');
+                }
+
+                const data = await response.json();
+                
+                if (data.success && Array.isArray(data.bookings)) {
+                    const userBookings = data.bookings.filter((b: any) => {
+                        // Pastikan dbWa adalah string sebelum replace
+                        let dbWa = String(b.whatsapp || '').replace(/\D/g, '');
+                        if (dbWa.startsWith('0')) dbWa = '62' + dbWa.slice(1);
+                        else if (dbWa.startsWith('8')) dbWa = '62' + dbWa;
+                        
+                        return dbWa === normalizedWa;
+                    });
+                    foundBookings = userBookings.length;
+                }
+            } catch (fetchError) {
+                console.error('Fetch Error:', fetchError);
+                // Kita lanjutkan agar bisa dicek foundBookings, 
+                // tapi jika ini gagal dan bukan dev mode, kita lempar error
+                if (process.env.NODE_ENV === 'production') {
+                    throw fetchError;
+                }
             }
         } else {
              // Fallback Dev Mode
