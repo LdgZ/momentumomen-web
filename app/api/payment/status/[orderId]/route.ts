@@ -29,7 +29,6 @@ export async function GET(
             method: 'GET',
             headers: {
                 Authorization: `Basic ${auth}`,
-                'api-version': '2022-07-31',
             },
         });
 
