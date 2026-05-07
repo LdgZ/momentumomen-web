@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        action: 'addBooking',
-                        data: {
+                        action: 'createBooking',
+                        booking: {
                             orderId,
                             fullName,
                             email,
@@ -88,9 +88,6 @@ export async function POST(request: NextRequest) {
                             packagePrice,
                             notes: notes || '',
                             paymentMethod: 'qris',
-                            status: 'pending',
-                            paymentStatus: 'pending',
-                            timestamp: new Date().toISOString(),
                         },
                     }),
                 });

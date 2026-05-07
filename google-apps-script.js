@@ -1,274 +1,170 @@
-/**
- * Google Apps Script untuk Elora Wedding
- * 
- * CARA SETUP:
- * 1. Buka Google Sheets baru
- * 2. Buat sheet dengan nama "Bookings" 
- * 3. Tambahkan header di row pertama:
- *    ID | Full Name | Email | WhatsApp | Wedding Date | Package ID | Package Name | Package Price | Notes | Status | Payment Status | Payment Method | Payment Proof | Drive Link | Paid At | Created At
- * 4. Buka Extensions > Apps Script
- * 5. Hapus kode default, paste kode ini
- * 6. Deploy > New deployment > Select type: Web app
- * 7. Execute as: Me
- * 8. Who has access: Anyone
- * 9. Deploy dan copy URL Web App
- * 10. Paste URL tersebut ke file .env.local sebagai NEXT_PUBLIC_GOOGLE_SCRIPT_URL
+/** 
+ * MOMENTUMOMEN - Smart Google Apps Script v2
+ * Sistem database cerdas berbasis nama kolom.
  */
 
-// Fungsi utama untuk handle HTTP requests
+const SHEET_NAME = 'Bookings';
+const HEADERS = [
+  'ID', 'Full Name', 'Email', 'WhatsApp', 'Wedding Date', 'Package ID', 
+  'Package Name', 'Package Price', 'Notes', 'Status', 'Payment Status', 
+  'Payment Method', 'Payment Proof', 'Drive Link', 'Paid At', 'Created At'
+];
+
+// 1. Fungsi Inisialisasi / Reset (Jalankan ini sekali di editor Apps Script)
+function initDatabase() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  
+  if (sheet) {
+    sheet.clear(); // Bersihkan semua data
+  } else {
+    sheet = ss.insertSheet(SHEET_NAME);
+  }
+  
+  // Set Header dan Format
+  sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS])
+       .setBackground('#4f46e5').setFontColor('white').setFontWeight('bold');
+  sheet.setFrozenRows(1);
+  Logger.log('Database berhasil di-reset dan di-inisialisasi.');
+}
+
+// Helper: Mencari index kolom berdasarkan nama
+function getHeaderMap(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const map = {};
+  headers.forEach((h, i) => map[h] = i);
+  return map;
+}
+
 function doPost(e) {
-    try {
-        const data = JSON.parse(e.postData.contents);
-        const action = data.action;
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
 
-        switch (action) {
-            case 'addBooking':
-                return addBooking(data.data);
-            case 'updateStatus':
-                return updateBookingStatus(data.bookingId, data.status, data.paymentStatus);
-            case 'addDriveLink':
-                return addDriveLink(data.bookingId, data.driveLink);
-            default:
-                return ContentService.createTextOutput(JSON.stringify({
-                    success: false,
-                    message: 'Unknown action'
-                })).setMimeType(ContentService.MimeType.JSON);
-        }
-    } catch (error) {
-        return ContentService.createTextOutput(JSON.stringify({
-            success: false,
-            message: error.toString()
-        })).setMimeType(ContentService.MimeType.JSON);
-    }
+    if (action === 'createBooking') return createBooking(data.booking);
+    if (action === 'updateStatus') return updateStatus(data.bookingId, data.status, data.paymentStatus);
+    if (action === 'addDriveLink') return addDriveLink(data.bookingId, data.driveLink);
+
+    throw new Error('Action not found');
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+                         .setMimeType(ContentService.MimeType.JSON);
+  }
 }
 
-// Handle GET requests
 function doGet(e) {
-    try {
-        const action = e.parameter.action;
-
-        switch (action) {
-            case 'getBookings':
-                return getBookings();
-            case 'getBookedDates':
-                return getBookedDates();
-            case 'getSlots':
-                return getSlots(e.parameter.year, e.parameter.month);
-            default:
-                return ContentService.createTextOutput(JSON.stringify({
-                    success: false,
-                    message: 'Unknown action'
-                })).setMimeType(ContentService.MimeType.JSON);
-        }
-    } catch (error) {
-        return ContentService.createTextOutput(JSON.stringify({
-            success: false,
-            message: error.toString()
-        })).setMimeType(ContentService.MimeType.JSON);
-    }
+  const action = e.parameter.action;
+  if (action === 'getBookings') return getBookings();
+  return ContentService.createTextOutput('Service Active').setMimeType(ContentService.MimeType.TEXT);
 }
 
-// Add new booking
-function addBooking(data) {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bookings');
-    const bookingId = data.orderId || ('EW' + new Date().getTime());
+// --- CORE FUNCTIONS ---
 
-    const row = [
-        bookingId,
-        data.fullName,
-        data.email,
-        data.whatsapp,
-        data.weddingDate,
-        data.selectedPackage,
-        data.packageName || getPackageName(data.selectedPackage),
-        data.packagePrice || getPackagePrice(data.selectedPackage),
-        data.notes || '',
-        data.status || 'pending',
-        data.paymentStatus || 'pending',
-        data.paymentMethod || 'qris',
-        '', // paymentProof
-        '', // driveLink
-        '', // paidAt
-        data.timestamp || new Date().toISOString()
-    ];
+function createBooking(booking) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const map = getHeaderMap(sheet);
+  const row = new Array(HEADERS.length).fill('');
 
-    sheet.appendRow(row);
+  row[map['ID']] = booking.orderId;
+  row[map['Full Name']] = booking.fullName;
+  row[map['Email']] = booking.email;
+  row[map['WhatsApp']] = String(booking.whatsapp); // Pastikan string
+  row[map['Wedding Date']] = booking.weddingDate;
+  row[map['Package ID']] = booking.selectedPackage;
+  row[map['Package Name']] = booking.packageName;
+  row[map['Package Price']] = booking.packagePrice;
+  row[map['Notes']] = booking.notes || '';
+  row[map['Status']] = 'pending';
+  row[map['Payment Status']] = 'pending';
+  row[map['Created At']] = new Date().toISOString();
 
-    return ContentService.createTextOutput(JSON.stringify({
-        success: true,
-        message: 'Booking berhasil ditambahkan',
-        bookingId: bookingId
-    })).setMimeType(ContentService.MimeType.JSON);
+  sheet.appendRow(row);
+  return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
 }
 
-// Get all bookings
 function getBookings() {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bookings');
-    const data = sheet.getDataRange().getValues();
-
-    // Skip header row
-    const bookings = data.slice(1).map(row => ({
-        id: row[0],
-        fullName: row[1],
-        email: row[2],
-        whatsapp: row[3],
-        weddingDate: row[4],
-        packageId: row[5],
-        packageName: row[6],
-        packagePrice: row[7],
-        notes: row[8],
-        status: row[9],
-        paymentStatus: row[10],
-        paymentMethod: row[11],
-        paymentProof: row[12],
-        driveLink: row[13],
-        paidAt: row[14],
-        createdAt: row[15]
-    }));
-
-    return ContentService.createTextOutput(JSON.stringify({
-        success: true,
-        bookings: bookings
-    })).setMimeType(ContentService.MimeType.JSON);
-}
-
-// Get booked dates
-function getBookedDates() {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bookings');
-    const data = sheet.getDataRange().getValues();
-
-    // Get wedding dates where status is confirmed or completed
-    const dates = data.slice(1)
-        .filter(row => row[9] === 'confirmed' || row[9] === 'completed')
-        .map(row => row[4]); // wedding date column
-
-    return ContentService.createTextOutput(JSON.stringify({
-        success: true,
-        dates: dates
-    })).setMimeType(ContentService.MimeType.JSON);
-}
-
-// Get slots count per day for a specific month
-function getSlots(year, month) {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bookings');
-    const data = sheet.getDataRange().getValues();
-    const slots = {};
-
-    // Skip header row
-    data.slice(1).forEach(row => {
-        const orderStatus = row[9];
-        const paymentStatus = row[10];
-        
-        // Only count active bookings
-        if (orderStatus !== 'cancelled' && paymentStatus !== 'expired') {
-            const weddingDateValue = row[4];
-            if (weddingDateValue instanceof Date) {
-                const dateStr = Utilities.formatDate(weddingDateValue, "GMT+7", "yyyy-MM-dd");
-                const [y, m, d] = dateStr.split('-');
-                if (parseInt(y) == year && parseInt(m) == month) {
-                    slots[dateStr] = (slots[dateStr] || 0) + 1;
-                }
-            } else if (typeof weddingDateValue === 'string' && weddingDateValue.includes('-')) {
-                const dateStr = weddingDateValue.split('T')[0];
-                const [y, m, d] = dateStr.split('-');
-                if (parseInt(y) == year && parseInt(m) == month) {
-                    slots[dateStr] = (slots[dateStr] || 0) + 1;
-                }
-            }
-        }
-    });
-
-    return ContentService.createTextOutput(JSON.stringify({
-        success: true,
-        slots: slots
-    })).setMimeType(ContentService.MimeType.JSON);
-}
-
-// Update booking status
-function updateBookingStatus(bookingId, status, paymentStatus) {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bookings');
-    const data = sheet.getDataRange().getValues();
-
-    for (let i = 1; i < data.length; i++) {
-        if (data[i][0] === bookingId) {
-            if (status) {
-                sheet.getRange(i + 1, 10).setValue(status); // status column
-            }
-            if (paymentStatus) {
-                sheet.getRange(i + 1, 11).setValue(paymentStatus); // payment status column
-                if (paymentStatus === 'paid') {
-                    sheet.getRange(i + 1, 15).setValue(new Date().toISOString()); // paidAt
-                }
-            }
-            break;
-        }
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({
-        success: true,
-        message: 'Status updated'
-    })).setMimeType(ContentService.MimeType.JSON);
-}
-
-// Add Google Drive link
-function addDriveLink(bookingId, driveLink) {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bookings');
-    const data = sheet.getDataRange().getValues();
-
-    for (let i = 1; i < data.length; i++) {
-        if (data[i][0] === bookingId) {
-            sheet.getRange(i + 1, 14).setValue(driveLink); // drive link column
-            break;
-        }
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({
-        success: true,
-        message: 'Drive link added'
-    })).setMimeType(ContentService.MimeType.JSON);
-}
-
-// Fungsi Otomatis: Menghapus pesanan yang sudah melewati batas waktu bayar (1 jam)
-// dan statusnya masih 'pending' agar database tetap ringan.
-function cleanupExpiredBookings() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bookings');
-  if (!sheet) return;
-  
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   const data = sheet.getDataRange().getValues();
+  const map = getHeaderMap(sheet);
+  const bookings = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    bookings.push({
+      id: row[map['ID']],
+      fullName: row[map['Full Name']],
+      email: row[map['Email']],
+      whatsapp: String(row[map['WhatsApp']]),
+      weddingDate: row[map['Wedding Date']],
+      packageId: row[map['Package ID']],
+      packageName: row[map['Package Name']],
+      packagePrice: row[map['Package Price']],
+      notes: row[map['Notes']],
+      status: row[map['Status']],
+      paymentStatus: row[map['Payment Status']],
+      paymentMethod: row[map['Payment Method']],
+      paymentProof: row[map['Payment Proof']],
+      driveLink: row[map['Drive Link']],
+      paidAt: row[map['Paid At']],
+      createdAt: row[map['Created At']]
+    });
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({ success: true, bookings: bookings }))
+                       .setMimeType(ContentService.MimeType.JSON);
+}
+
+function updateStatus(bookingId, status, paymentStatus) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  const map = getHeaderMap(sheet);
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][map['ID']] === bookingId) {
+      if (status) sheet.getRange(i + 1, map['Status'] + 1).setValue(status);
+      if (paymentStatus) {
+        sheet.getRange(i + 1, map['Payment Status'] + 1).setValue(paymentStatus);
+        if (paymentStatus === 'paid') {
+          sheet.getRange(i + 1, map['Paid At'] + 1).setValue(new Date().toISOString());
+        }
+      }
+      break;
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function addDriveLink(bookingId, driveLink) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  const map = getHeaderMap(sheet);
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][map['ID']] === bookingId) {
+      sheet.getRange(i + 1, map['Drive Link'] + 1).setValue(driveLink);
+      break;
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function cleanupExpiredBookings() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!sheet) return;
+  const data = sheet.getDataRange().getValues();
+  const map = getHeaderMap(sheet);
   const now = new Date();
-  const ONE_HOUR = 60 * 60 * 1000; // 1 jam dalam milidetik
-  
-  // Mulai dari bawah ke atas agar index baris tidak berantakan saat dihapus
+  const LIMIT = 2 * 60 * 60 * 1000; // 2 Jam
+
   for (let i = data.length - 1; i >= 1; i--) {
-    const paymentStatus = data[i][10]; // Kolom K (Payment Status)
-    const createdAtStr = data[i][15];   // Kolom P (Created At)
+    const pStatus = String(data[i][map['Payment Status']]).toLowerCase();
+    const createdAtStr = data[i][map['Created At']];
     
-    if (paymentStatus === 'pending' && createdAtStr) {
+    if (pStatus === 'pending' && createdAtStr) {
       const createdAt = new Date(createdAtStr);
-      // Jika sudah lebih dari 1 jam dan belum dibayar, hapus.
-      if (now.getTime() - createdAt.getTime() > ONE_HOUR) {
+      if (!isNaN(createdAt.getTime()) && (now - createdAt > LIMIT)) {
         sheet.deleteRow(i + 1);
       }
     }
   }
-}
-
-// Helper: Get package name from ID
-function getPackageName(packageId) {
-    const packages = {
-        'basic': 'Basic Package',
-        'standard': 'Standard Package',
-        'premium': 'Premium Package'
-    };
-    return packages[packageId] || packageId;
-}
-
-// Helper: Get package price from ID
-function getPackagePrice(packageId) {
-    const prices = {
-        'basic': 1500000,
-        'standard': 3000000,
-        'premium': 5500000
-    };
-    return prices[packageId] || 0;
 }
