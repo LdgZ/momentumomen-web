@@ -17,16 +17,13 @@ export async function POST(request: NextRequest) {
         const auth = Buffer.from(`${XENDIT_SECRET_KEY}:`).toString('base64');
         
         // Memanggil API Simulasi Xendit
-        const response = await fetch(`https://api.xendit.co/qr_codes/qr_req_simulated/payments/simulate`, {
+        // Endpoint: POST https://api.xendit.co/qr_codes/{external_id}/payments/simulate
+        const response = await fetch(`https://api.xendit.co/qr_codes/${externalId}/payments/simulate`, {
             method: 'POST',
             headers: {
                 Authorization: `Basic ${auth}`,
                 'Content-Type': 'application/json',
-                'api-version': '2022-07-31',
             },
-            body: JSON.stringify({
-                external_id: externalId
-            })
         });
 
         if (!response.ok) {

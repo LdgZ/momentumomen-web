@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
             
             if (data.success && data.bookings) {
                 const userBookings = data.bookings.filter((b: any) => {
-                    let dbWa = b.whatsapp.replace(/\D/g, '');
+                    let dbWa = (b.whatsapp || '').replace(/\D/g, '');
                     if (dbWa.startsWith('0')) dbWa = '62' + dbWa.slice(1);
                     else if (dbWa.startsWith('8')) dbWa = '62' + dbWa;
                     
