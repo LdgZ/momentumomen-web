@@ -25,44 +25,56 @@ export async function GET(
 
     try {
         const auth = Buffer.from(`${XENDIT_SECRET_KEY}:`).toString('base64');
-        
-        // Pengecekan data QRIS berdasarkan reference_id (menggunakan Xendit v2 API)
-        const response = await fetch(`https://api.xendit.co/qr_codes?reference_id=${orderId}`, {
-            method: 'GET',
-            headers: {
-                Authorization: `Basic ${auth}`,
-                'api-version': '2022-07-31',
-            },
-        });
+        let qrData = null;
 
-        let data = await response.json();
-        let qrData = data && data.data && data.data.length > 0 ? data.data[0] : null;
-
-        // --- FALLBACK KE V1 (Jika v2 tidak menemukan data) ---
-        if (!qrData) {
-            const fallbackResponse = await fetch(`https://api.xendit.co/qr_codes/${orderId}`, {
+        // --- CARA 1: Coba v1 (Langsung pakai orderId sebagai ID) ---
+        // Cara ini paling cepat jika orderId adalah ID QR-nya.
+        try {
+            const resV1 = await fetch(`https://api.xendit.co/qr_codes/${orderId}`, {
                 method: 'GET',
-                headers: {
-                    Authorization: `Basic ${auth}`,
-                },
+                headers: { Authorization: `Basic ${auth}` },
             });
-            
-            if (fallbackResponse.ok) {
-                qrData = await fallbackResponse.json();
+            if (resV1.ok) {
+                qrData = await resV1.json();
+            }
+        } catch (e) {
+            console.error('v1 fetch error:', e);
+        }
+
+        // --- CARA 2: Coba v2 (Cari berdasarkan reference_id) ---
+        // Jika cara 1 gagal, kita cari di daftar QR v2.
+        if (!qrData || !qrData.qr_string) {
+            try {
+                const resV2 = await fetch(`https://api.xendit.co/qr_codes?reference_id=${orderId}`, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Basic ${auth}`,
+                        'api-version': '2022-07-31',
+                    },
+                });
+                if (resV2.ok) {
+                    const dataV2 = await resV2.json();
+                    if (dataV2 && dataV2.data && dataV2.data.length > 0) {
+                        qrData = dataV2.data[0];
+                    }
+                }
+            } catch (e) {
+                console.error('v2 fetch error:', e);
             }
         }
 
+        // --- HASIL ---
         if (qrData && qrData.qr_string) {
              return NextResponse.json({
                  success: true,
                  qrString: qrData.qr_string,
                  xenditId: qrData.id,
-                 expiresAt: qrData.expires_at || new Date(new Date(qrData.created).getTime() + 30 * 60 * 1000).toISOString(),
+                 expiresAt: qrData.expires_at || new Date(new Date(qrData.created || Date.now()).getTime() + 30 * 60 * 1000).toISOString(),
                  amount: qrData.amount
              });
         }
 
-        return NextResponse.json({ success: false, message: 'QR Not Found' }, { status: 404 });
+        return NextResponse.json({ success: false, message: 'Tagihan tidak ditemukan di Xendit' }, { status: 404 });
     } catch (error) {
         console.error('API Error:', error);
         return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
