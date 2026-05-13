@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Booking } from '@/lib/types';
 import { format } from 'date-fns';
@@ -16,7 +16,14 @@ import {
     RefreshCw,
     TrendingUp,
     Users,
-    Activity
+    Activity,
+    CalendarSearch,
+    Clock,
+    Hash,
+    UserCheck,
+    Package,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -26,6 +33,13 @@ export default function AdminDashboard() {
     const [searchQuery, setSearchQuery] = useState('');
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
     const router = useRouter();
+
+    // Date Checker Widget State
+    const today = new Date();
+    const [checkerDate, setCheckerDate] = useState<string>(
+        `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    );
+    const [calendarMonth, setCalendarMonth] = useState<Date>(new Date(today.getFullYear(), today.getMonth(), 1));
 
     const fetchBookings = async () => {
         setLoading(true);
@@ -161,6 +175,57 @@ export default function AdminDashboard() {
         };
     }, [bookings, searchQuery]);
 
+    // Reservations on selected checker date (by weddingDate)
+    const dateCheckerResults = useMemo(() => {
+        if (!checkerDate) return [];
+        return bookings.filter(b => {
+            try {
+                const wDate = new Date(b.weddingDate);
+                const y = wDate.getFullYear();
+                const m = String(wDate.getMonth() + 1).padStart(2, '0');
+                const d = String(wDate.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}` === checkerDate;
+            } catch { return false; }
+        });
+    }, [bookings, checkerDate]);
+
+    // Build a Set of dates that have reservations for the mini calendar
+    const bookedDatesSet = useMemo(() => {
+        const s = new Set<string>();
+        bookings.forEach(b => {
+            try {
+                const wDate = new Date(b.weddingDate);
+                const y = wDate.getFullYear();
+                const m = String(wDate.getMonth() + 1).padStart(2, '0');
+                const d = String(wDate.getDate()).padStart(2, '0');
+                s.add(`${y}-${m}-${d}`);
+            } catch { /* skip */ }
+        });
+        return s;
+    }, [bookings]);
+
+    // Calendar navigation helpers
+    const prevMonth = useCallback(() => {
+        setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    }, []);
+    const nextMonth = useCallback(() => {
+        setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    }, []);
+
+    const calendarDays = useMemo(() => {
+        const year = calendarMonth.getFullYear();
+        const month = calendarMonth.getMonth();
+        const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const days: Array<{ dateStr: string; day: number } | null> = [];
+        for (let i = 0; i < firstDay; i++) days.push(null);
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            days.push({ dateStr, day: d });
+        }
+        return days;
+    }, [calendarMonth]);
+
     const formatRupiah = (amount: number) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -240,6 +305,202 @@ export default function AdminDashboard() {
                         <div>
                             <p className="text-zinc-400 text-sm mb-1">Total Transaksi Masuk</p>
                             <h3 className="text-2xl font-bold text-white">{stats.total} <span className="text-zinc-500 text-sm font-normal">pesanan</span></h3>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ===== Date Checker Widget ===== */}
+                <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl">
+                    <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
+                        <CalendarSearch className="w-5 h-5 text-pink-400" />
+                        Cek Reservasi per Tanggal
+                    </h2>
+
+                    <div className="flex flex-col lg:flex-row gap-6">
+
+                        {/* Mini Calendar */}
+                        <div className="flex-shrink-0">
+                            <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 w-full max-w-[300px]">
+                                {/* Month Nav */}
+                                <div className="flex items-center justify-between mb-4">
+                                    <button onClick={prevMonth} className="p-1.5 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white">
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    <span className="text-sm font-semibold text-white">
+                                        {calendarMonth.toLocaleString('id-ID', { month: 'long', year: 'numeric' })}
+                                    </span>
+                                    <button onClick={nextMonth} className="p-1.5 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white">
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                {/* Day Headers */}
+                                <div className="grid grid-cols-7 mb-2">
+                                    {['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map(d => (
+                                        <div key={d} className="text-center text-xs text-zinc-500 font-medium py-1">{d}</div>
+                                    ))}
+                                </div>
+
+                                {/* Day Cells */}
+                                <div className="grid grid-cols-7 gap-y-1">
+                                    {calendarDays.map((cell, i) => {
+                                        if (!cell) return <div key={`empty-${i}`} />;
+                                        const isBooked = bookedDatesSet.has(cell.dateStr);
+                                        const isSelected = cell.dateStr === checkerDate;
+                                        const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+                                        const isToday = cell.dateStr === todayStr;
+                                        return (
+                                            <button
+                                                key={cell.dateStr}
+                                                onClick={() => setCheckerDate(cell.dateStr)}
+                                                className={`relative text-center text-xs py-1.5 rounded-lg font-medium transition-all ${
+                                                    isSelected
+                                                        ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
+                                                        : isBooked
+                                                        ? 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30'
+                                                        : isToday
+                                                        ? 'border border-zinc-600 text-zinc-300 hover:bg-zinc-800'
+                                                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                                                }`}
+                                            >
+                                                {cell.day}
+                                                {isBooked && !isSelected && (
+                                                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-400" />
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Legend */}
+                                <div className="mt-4 pt-4 border-t border-zinc-800 flex items-center gap-4 text-xs text-zinc-500">
+                                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-indigo-400 inline-block" />Ada Reservasi</span>
+                                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-pink-500 inline-block" />Dipilih</span>
+                                </div>
+
+                                {/* Date Input fallback */}
+                                <div className="mt-3">
+                                    <input
+                                        type="date"
+                                        value={checkerDate}
+                                        onChange={e => {
+                                            setCheckerDate(e.target.value);
+                                            if (e.target.value) {
+                                                const d = new Date(e.target.value);
+                                                setCalendarMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+                                            }
+                                        }}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-pink-500 transition-colors"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Results Panel */}
+                        <div className="flex-1 min-h-[200px]">
+                            {checkerDate ? (
+                                <>
+                                    <div className="mb-4 flex items-center gap-3">
+                                        <div className="p-2 bg-pink-500/10 rounded-xl">
+                                            <CalendarDays className="w-4 h-4 text-pink-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-white font-semibold">
+                                                {new Date(checkerDate + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                            </p>
+                                            <p className="text-xs text-zinc-500">
+                                                {dateCheckerResults.length === 0
+                                                    ? 'Tidak ada reservasi wedding'
+                                                    : `${dateCheckerResults.length} reservasi ditemukan`}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {dateCheckerResults.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-36 text-center border border-dashed border-zinc-800 rounded-2xl">
+                                            <CalendarDays className="w-8 h-8 text-zinc-700 mb-2" />
+                                            <p className="text-zinc-500 text-sm">Tidak ada wedding dijadwalkan pada tanggal ini</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {dateCheckerResults.map(b => (
+                                                <div key={b.id} className="flex flex-col sm:flex-row sm:items-center gap-3 bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-4 hover:border-zinc-700 transition-colors">
+                                                    {/* ID */}
+                                                    <div className="flex items-center gap-2 min-w-[160px]">
+                                                        <div className="p-1.5 bg-indigo-500/10 rounded-lg">
+                                                            <Hash className="w-3.5 h-3.5 text-indigo-400" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs text-zinc-500">ID Pesanan</p>
+                                                            <p className="text-xs font-bold text-indigo-400 font-mono">{b.id}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Jam Booking */}
+                                                    <div className="flex items-center gap-2 min-w-[110px]">
+                                                        <div className="p-1.5 bg-amber-500/10 rounded-lg">
+                                                            <Clock className="w-3.5 h-3.5 text-amber-400" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs text-zinc-500">Dipesan Jam</p>
+                                                            <p className="text-xs font-semibold text-white">
+                                                                {format(new Date(b.createdAt), 'HH:mm', { locale: id })}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Klien */}
+                                                    <div className="flex items-center gap-2 flex-1">
+                                                        <div className="p-1.5 bg-emerald-500/10 rounded-lg">
+                                                            <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs text-zinc-500">Klien</p>
+                                                            <p className="text-xs font-semibold text-white">{b.fullName}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Paket */}
+                                                    <div className="flex items-center gap-2 min-w-[130px]">
+                                                        <div className="p-1.5 bg-purple-500/10 rounded-lg">
+                                                            <Package className="w-3.5 h-3.5 text-purple-400" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs text-zinc-500">Paket</p>
+                                                            <p className="text-xs font-semibold text-zinc-200 truncate max-w-[120px]">{b.packageName}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Status Badge */}
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        <span className={`px-2 py-0.5 text-xs rounded-full font-medium border ${
+                                                            b.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                            b.status === 'confirmed' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
+                                                            b.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                                            'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                                        }`}>
+                                                            {b.status === 'completed' ? 'Selesai' :
+                                                             b.status === 'confirmed' ? 'Terkonfirmasi' :
+                                                             b.status === 'cancelled' ? 'Dibatalkan' : 'Menunggu'}
+                                                        </span>
+                                                        <span className={`px-2 py-0.5 text-xs rounded-full font-medium border flex items-center gap-1 ${
+                                                            b.paymentStatus === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                                                        }`}>
+                                                            <CreditCard className="w-2.5 h-2.5" />
+                                                            {b.paymentStatus === 'paid' ? 'Lunas' : 'Belum Lunas'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-center">
+                                    <CalendarSearch className="w-10 h-10 text-zinc-700 mb-3" />
+                                    <p className="text-zinc-500">Pilih tanggal untuk melihat reservasi</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
