@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Hitung waktu kadaluarsa (30 menit dari sekarang)
-        const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+        // Hitung waktu kadaluarsa (24 jam dari sekarang)
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
         return NextResponse.json({
             success: true,

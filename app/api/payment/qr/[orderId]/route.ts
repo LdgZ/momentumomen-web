@@ -18,7 +18,7 @@ export async function GET(
              success: true,
              qrString: '00020101021226680016COM.GO-JEK.WWW011893600000000000000002142273760410766351140015ID.CO.QRIS.WWW0215ID10220000000000303UMO520448145303360540755000005802ID5912Momentumomen6007Jakarta61051211062320116EW2026042510010708MOMENTUM6304ED46',
              xenditId: 'mock_xendit_id',
-             expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+             expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
              amount: 5500000
         });
     }
@@ -63,16 +63,16 @@ export async function GET(
             }
         }
 
-        // --- HASIL ---
-        if (qrData && qrData.qr_string) {
-             return NextResponse.json({
-                 success: true,
-                 qrString: qrData.qr_string,
-                 xenditId: qrData.id,
-                 expiresAt: qrData.expires_at || new Date(new Date(qrData.created || Date.now()).getTime() + 30 * 60 * 1000).toISOString(),
-                 amount: qrData.amount
-             });
-        }
+         // --- HASIL ---
+         if (qrData && qrData.qr_string) {
+              return NextResponse.json({
+                  success: true,
+                  qrString: qrData.qr_string,
+                  xenditId: qrData.id,
+                  expiresAt: qrData.expires_at || new Date(new Date(qrData.created || Date.now()).getTime() + 24 * 60 * 60 * 1000).toISOString(),
+                  amount: qrData.amount
+              });
+         }
 
         return NextResponse.json({ success: false, message: 'Tagihan tidak ditemukan di Xendit' }, { status: 404 });
     } catch (error) {
